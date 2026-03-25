@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — MIS</title>
+  <link rel="stylesheet" href="/login-static/login.css">
+</head>
+<body>
+
+  <div class="login-bg">
+    <div class="grid-overlay"></div>
+  </div>
+
+  <div class="login-wrap">
+
+    <!-- Brand -->
+    <div class="login-brand">
+      <div class="logo-mark">M</div>
+      <span class="logo-text">MIS</span>
+    </div>
+
+    <!-- Card -->
+    <div class="login-card">
+      <div class="card-header">
+        <h1>Welcome back</h1>
+        <p>Sign in to your dashboard</p>
+      </div>
+
+      {% if error %}
+      <div class="alert-error">
+        <span>⚠</span>
+        <span>{{ error }}</span>
+      </div>
+      {% endif %}
+
+      <form method="post" action="/login" class="login-form">
+
+        <div class="field">
+          <label for="username">Username</label>
+          <div class="input-wrap">
+            <span class="input-icon">◎</span>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              placeholder="Enter username"
+              autocomplete="username"
+              autofocus
+              required
+            >
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">◈</span>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="••••••••••"
+              autocomplete="current-password"
+              required
+            >
+            <button type="button" class="toggle-pw" aria-label="Toggle password" onclick="togglePw(this)">
+              <span class="eye-icon">◌</span>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-login">
+          <span>Sign In</span>
+          <span class="arrow">→</span>
+        </button>
+
+      </form>
+
+      <p class="card-footer">
+        Need access? <a href="mailto:admin@company.com">Contact administrator</a>
+      </p>
+    </div>
+
+    <p class="version">MIS v2.0.0</p>
+  </div>
+
+  <script>
+    function togglePw(btn) {
+      const input = btn.closest('.input-wrap').querySelector('input');
+      input.type = input.type === 'password' ? 'text' : 'password';
+      btn.querySelector('.eye-icon').textContent = input.type === 'password' ? '◌' : '●';
+    }
+
+    // Enter key submits
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.querySelector('.btn-login').click();
+    });
+  </script>
+</body>
+</html>

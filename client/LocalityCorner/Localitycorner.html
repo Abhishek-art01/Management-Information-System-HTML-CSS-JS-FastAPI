@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Locality Manager — MIS</title>
+  <link rel="stylesheet" href="/components-static/theme.css">
+  <link rel="stylesheet" href="/components-static/Sidebar.css">
+  <link rel="stylesheet" href="/locality-static/Localitycorner.css">
+  <script src="/components-static/Sidebar.js" defer></script>
+</head>
+<body class="page-wrapper">
+
+  <main class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        ◉ Locality Manager
+        <span class="badge">Address Mapping</span>
+      </div>
+      <div class="topbar-right">
+        <input type="text" class="form-input" id="search-input"
+               placeholder="Search addresses…" style="width:220px; padding:7px 12px; font-size:.82rem;">
+        <div class="user-chip">
+          <div class="user-avatar">{{ user[0]|upper if user else 'U' }}</div>
+          <span>{{ user }}</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- Top actions -->
+      <div class="section-header">
+        <div class="section-title">Address Table</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <select class="form-select" id="locality-filter" style="width:200px;">
+            <option value="">All Localities</option>
+          </select>
+          <button class="btn btn-primary btn-sm" id="bulk-map-btn" disabled>
+            Map Selected
+          </button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="card" style="padding:0;">
+        <div class="table-wrapper" style="border:none; border-radius:var(--r-lg);">
+          <table id="address-table">
+            <thead>
+              <tr>
+                <th style="width:40px;">
+                  <input type="checkbox" id="select-all" class="chk">
+                </th>
+                <th>#</th>
+                <th>Address</th>
+                <th>Locality</th>
+                <th>Zone</th>
+                <th>KM</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+              <tr>
+                <td colspan="7" style="text-align:center; padding:40px; color:var(--text-muted);">
+                  <span class="spinner"></span>&nbsp; Loading…
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Mapping Modal -->
+  <div class="modal-backdrop" id="modal-backdrop" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Map to Locality</h3>
+        <button class="modal-close" id="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Select Locality</label>
+          <select class="form-select" id="modal-locality-select">
+            <option value="">— Choose locality —</option>
+          </select>
+        </div>
+        <p style="font-size:.8rem; color:var(--text-muted); margin-top:8px;">
+          Mapping <strong id="map-count">—</strong> address(es)
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost btn-sm" id="modal-cancel">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="modal-confirm">Confirm Mapping</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/locality-static/Localitycorner.js"></script>
+</body>
+</html>

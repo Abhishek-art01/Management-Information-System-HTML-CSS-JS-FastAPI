@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GPS Audit — MIS</title>
+  <link rel="stylesheet" href="/components-static/theme.css">
+  <link rel="stylesheet" href="/components-static/Sidebar.css">
+  <link rel="stylesheet" href="/gps-static/gps_corner.css">
+  <script src="/components-static/Sidebar.js" defer></script>
+</head>
+<body class="page-wrapper">
+
+  <main class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        ◑ GPS Audit
+        <span class="badge">Journey Verification</span>
+      </div>
+      <div class="topbar-right">
+        <div class="user-chip">
+          <div class="user-avatar">U</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- Upload Section -->
+      <div class="section-header">
+        <div class="section-title">Upload GPS Data</div>
+      </div>
+
+      <div class="drop-zone" id="gps-drop-zone">
+        <span class="drop-icon">◑</span>
+        <div class="drop-title">Drop GPS Excel file here</div>
+        <div class="drop-sub">or <span class="drop-link">browse to upload</span></div>
+        <input type="file" id="gps-file-input" accept=".xlsx,.xls" style="display:none;">
+      </div>
+
+      <div id="gps-action" style="display:none; margin-top:16px;">
+        <div class="file-item" id="gps-file-item">
+          <span class="file-item-icon">◈</span>
+          <span class="file-item-name" id="gps-fname"></span>
+          <span class="file-item-size" id="gps-fsize"></span>
+        </div>
+        <div class="action-row" style="margin-top:14px;">
+          <button class="btn btn-ghost btn-sm" id="gps-clear">✕ Clear</button>
+          <button class="btn btn-primary" id="gps-process">
+            <span id="gps-btn-label">◑ Process GPS</span>
+            <span class="spinner" id="gps-spinner" style="display:none;"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div id="gps-results" style="margin-top:24px;"></div>
+
+    </div>
+  </main>
+
+  <script>
+  (function(){
+    "use strict";
+
+    const dropZone  = document.getElementById("gps-drop-zone");
+    const fileInput = document.getElementById("gps-file-input");
+    const action    = document.getElementById("gps-action");
+    const fileItem  = document.getElementById("gps-file-item");
+    const fname     = document.getElementById("gps-fname");
+    const fsize     = document.getElementById("gps-fsize");
+    const clearBtn  = document.getElementById("gps-clear");
+    const processBtn = document.getElementById("gps-process");
+    const btnLabel  = document.getElementById("gps-btn-label");
+    const spinner   = document.getElementById("gps-spinner");
+    const results   = document.getElementById("gps-results");
+
+    let file = null;
+
+    function fmtSize(b) {
+      return b < 1024*1024 ? (b/1024).toFixed(1)+" KB" : (b/1024/1024).toFixed(1)+" MB";
+    }
+
+    function setFile(f) {
+      if (!f) return;
+      file = f;
+      fname.textContent = f.name;
+      fsize.textContent = fmtSize(f.size);
+      action.style.display = "block";
+      results.innerHTML = "";
+    }
+
+    dropZone.addEventListener("click", () => fileInput.click());
+    dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("drag-over"); });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
+    dropZone.addEventListener("drop", e => {
+      e.preventDefault(); dropZone.classList.remove("drag-over");
+      setFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener("change", () => { setFile(fileInput.files[0]); fileInput.value=""; });
+    clearBtn.addEventListener("click", () => { file=null; action.style.display="none"; results.innerHTML=""; });
+
+    processBtn.addEventListener("click", async () => {
+      if (!file) return;
+      processBtn.disabled = true;
+      btnLabel.style.display = "none";
+      spinner.style.display = "inline-block";
+
+      const fd = new FormData();
+      fd.append("file", file);
+
+      try {
+        const res = await fetch("/api/gps/upload", { method:"POST", body:fd });
+        if (!res.ok) { const e=await res.json().catch(()=>({})); throw new Error(e.detail||res.statusText); }
+        const ct = res.headers.get("content-type")||"";
+        if (ct.includes("json")) {
+          const d = await res.json();
+          results.innerHTML = `<div class="alert alert-success">✓ ${d.message ?? "Processed successfully"}</div>`;
+        } else {
+          const blob = await res.blob();
+          const url  = URL.createObjectURL(blob);
+          const fn   = (res.headers.get("content-disposition")||"").match(/filename[^;=\n]*=([^;\n]*)/)?.[1]?.replace(/['"]/g,"")||"gps_output.xlsx";
+          const a = document.createElement("a");
+          a.href = url; a.download = fn; a.click();
+          results.innerHTML = `<div class="alert alert-success">✓ File downloaded: ${fn}</div>`;
+        }
+      } catch(e) {
+        results.innerHTML = `<div class="alert alert-error">⚠ ${e.message}</div>`;
+      } finally {
+        processBtn.disabled = false;
+        btnLabel.style.display = "inline";
+        spinner.style.display = "none";
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

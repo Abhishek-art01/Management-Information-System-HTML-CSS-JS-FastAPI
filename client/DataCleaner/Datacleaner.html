@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Cleaner — MIS</title>
+  <link rel="stylesheet" href="/components-static/theme.css">
+  <link rel="stylesheet" href="/components-static/Sidebar.css">
+  <link rel="stylesheet" href="/cleaner-static/Datacleaner.css">
+  <script src="/components-static/Sidebar.js" defer></script>
+</head>
+<body class="page-wrapper">
+
+  <main class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        ⚡ Data Cleaner
+        <span class="badge">Upload &amp; Process</span>
+      </div>
+      <div class="topbar-right">
+        <div class="user-chip">
+          <div class="user-avatar">{{ user[0]|upper if user else 'U' }}</div>
+          <span>{{ user }}</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- Cleaner Type Selector -->
+      <div class="section-header">
+        <div class="section-title">Select Cleaner Type</div>
+      </div>
+
+      <div class="cleaner-types">
+        <label class="type-card">
+          <input type="radio" name="cleanerType" value="client" checked>
+          <div class="type-inner">
+            <span class="type-icon icon-red">◎</span>
+            <div>
+              <div class="type-name">Client Data</div>
+              <div class="type-desc">Process MIS / client trip files</div>
+            </div>
+            <span class="type-check">✓</span>
+          </div>
+        </label>
+        <label class="type-card">
+          <input type="radio" name="cleanerType" value="fastag">
+          <div class="type-inner">
+            <span class="type-icon icon-cyan">◈</span>
+            <div>
+              <div class="type-name">Fastag Data</div>
+              <div class="type-desc">Clean Fastag transactions</div>
+            </div>
+            <span class="type-check">✓</span>
+          </div>
+        </label>
+        <label class="type-card">
+          <input type="radio" name="cleanerType" value="operation_app">
+          <div class="type-inner">
+            <span class="type-icon icon-green">⬡</span>
+            <div>
+              <div class="type-name">App-Pickup</div>
+              <div class="type-desc">Operation</div>
+            </div>
+            <span class="type-check">✓</span>
+          </div>
+        </label>
+        <label class="type-card">
+          <input type="radio" name="cleanerType" value="operation_manual_pickup">
+          <div class="type-inner">
+            <span class="type-icon icon-amber">↑</span>
+            <div>
+              <div class="type-name">Manual-Pickup</div>
+              <div class="type-desc">Operation</div>
+            </div>
+            <span class="type-check">✓</span>
+          </div>
+        </label>
+        <label class="type-card">
+          <input type="radio" name="cleanerType" value="operation_manual_drop">
+          <div class="type-inner">
+            <span class="type-icon icon-purple">↓</span>
+            <div>
+              <div class="type-name">Manual Drop</div>
+              <div class="type-desc">Process manual drop records</div>
+            </div>
+            <span class="type-check">✓</span>
+          </div>
+        </label>
+        <label class="type-card">
+          <input type="radio" name="cleanerType" value="ba_row">
+          <div class="type-inner">
+            <span class="type-icon icon-red">◑</span>
+            <div>
+              <div class="type-name">BA Row Data</div>
+              <div class="type-desc">Process BA-level row data</div>
+            </div>
+            <span class="type-check">✓</span>
+          </div>
+        </label>
+      </div>
+
+      <!-- Drop zone -->
+      <div class="section-header" style="margin-top:28px;">
+        <div class="section-title">Upload Files</div>
+        <span id="file-count-badge" class="badge badge-gray" style="display:none;"></span>
+      </div>
+
+      <div class="drop-zone" id="drop-zone">
+        <span class="drop-icon">↑</span>
+        <div class="drop-title">Drop Excel files here</div>
+        <div class="drop-sub">or <span class="drop-link">browse to upload</span> &nbsp;·&nbsp; .xlsx, .xls supported</div>
+        <input type="file" id="file-input" multiple accept=".xlsx,.xls" style="display:none;">
+      </div>
+
+      <!-- File list -->
+      <div id="file-list" class="file-list" style="display:none;"></div>
+
+      <!-- Action row -->
+      <div class="action-row" id="action-row" style="display:none;">
+        <button class="btn btn-ghost btn-sm" id="clear-btn">✕ Clear All</button>
+        <button class="btn btn-primary" id="process-btn">
+          <span id="btn-label">⚡ Process Files</span>
+          <span class="spinner" id="btn-spinner" style="display:none;"></span>
+        </button>
+      </div>
+
+      <!-- Result -->
+      <div id="result-area"></div>
+
+    </div>
+  </main>
+
+  <script src="/cleaner-static/Datacleaner.js"></script>
+</body>
+</html>

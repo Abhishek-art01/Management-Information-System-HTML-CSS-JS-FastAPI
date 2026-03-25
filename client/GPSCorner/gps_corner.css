@@ -1,0 +1,22 @@
+/* GPS Corner — page styles */
+/* All base styles come from theme.css */
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+
+.file-item-icon { font-size: 1.2rem; color: var(--cyan); flex-shrink: 0; }
+.file-item-name { flex: 1; font-size: .875rem; font-weight: 500; color: var(--text-primary); }
+.file-item-size { font-size: .75rem; color: var(--text-muted); font-family: var(--font-mono); flex-shrink: 0; }
+
+.action-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}

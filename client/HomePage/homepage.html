@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — MIS</title>
+  <link rel="stylesheet" href="/components-static/theme.css">
+  <link rel="stylesheet" href="/components-static/Sidebar.css">
+  <link rel="stylesheet" href="/home-static/homepage.css">
+  <script src="/components-static/Sidebar.js" defer></script>
+</head>
+<body class="page-wrapper">
+
+  <!-- Sidebar injected by Sidebar.js -->
+
+  <main class="main-content">
+
+    <!-- Top bar -->
+    <header class="topbar">
+      <div class="topbar-title">
+        Dashboard
+        <span class="badge">Overview</span>
+      </div>
+      <div class="topbar-right">
+        <div class="user-chip">
+          <div class="user-avatar">{{ user[0]|upper if user else 'U' }}</div>
+          <span>{{ user }}</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- Welcome banner -->
+      <div class="welcome-banner">
+        <div class="welcome-inner">
+          <div>
+            <h2>Good to see you, <strong>{{ user }}</strong> 👋</h2>
+            <p>Here's your operations overview. Select a module from the sidebar to get started.</p>
+          </div>
+          <div class="welcome-actions">
+            <a href="/cleaner" class="btn btn-primary btn-sm">Open Cleaner →</a>
+          </div>
+        </div>
+        <div class="banner-glow"></div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon icon-red">⚡</div>
+          <div>
+            <div class="stat-value" id="stat-cleaned">—</div>
+            <div class="stat-label">Records Cleaned</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon icon-cyan">◉</div>
+          <div>
+            <div class="stat-value" id="stat-localities">—</div>
+            <div class="stat-label">Localities Mapped</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon icon-green">◈</div>
+          <div>
+            <div class="stat-value" id="stat-tolls">—</div>
+            <div class="stat-label">Toll Records</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon icon-amber">⬡</div>
+          <div>
+            <div class="stat-value" id="stat-b2b">—</div>
+            <div class="stat-label">B2B Entries</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Module cards -->
+      <div class="section-header">
+        <div class="section-title">Modules</div>
+      </div>
+
+      <div class="modules-grid">
+
+        <a href="/cleaner" class="module-card">
+          <div class="module-icon icon-red">⚡</div>
+          <div class="module-body">
+            <div class="module-title">Data Cleaner</div>
+            <div class="module-desc">Upload & process MIS, Fastag, and Operation data files</div>
+          </div>
+          <span class="module-arrow">→</span>
+        </a>
+
+        <a href="/locality-manager" class="module-card">
+          <div class="module-icon icon-cyan">◉</div>
+          <div class="module-body">
+            <div class="module-title">Locality Manager</div>
+            <div class="module-desc">Map addresses to zones and manage locality master data</div>
+          </div>
+          <span class="module-arrow">→</span>
+        </a>
+
+        <a href="/audit/toll" class="module-card">
+          <div class="module-icon icon-green">◈</div>
+          <div class="module-body">
+            <div class="module-title">Toll Audit</div>
+            <div class="module-desc">Review and verify toll transactions and route rules</div>
+          </div>
+          <span class="module-arrow">→</span>
+        </a>
+
+        <a href="/b2b-maker" class="module-card">
+          <div class="module-icon icon-amber">⬡</div>
+          <div class="module-body">
+            <div class="module-title">B2B Maker</div>
+            <div class="module-desc">Generate B2B deduction reports and summaries</div>
+          </div>
+          <span class="module-arrow">→</span>
+        </a>
+
+        <a href="/audit/gps" class="module-card">
+          <div class="module-icon icon-purple">◑</div>
+          <div class="module-body">
+            <div class="module-title">GPS Audit</div>
+            <div class="module-desc">Validate GPS data, journey timings, and route compliance</div>
+          </div>
+          <span class="module-arrow">→</span>
+        </a>
+
+        <a href="/operation-manager" class="module-card">
+          <div class="module-icon icon-cyan">↓</div>
+          <div class="module-body">
+            <div class="module-title">Downloads</div>
+            <div class="module-desc">Export processed datasets and generated reports</div>
+          </div>
+          <span class="module-arrow">→</span>
+        </a>
+
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    // Load stats via API (fire and forget)
+    async function loadStats() {
+      try {
+        const [locs] = await Promise.allSettled([
+          fetch('/api/dropdown-localities/').then(r => r.json()),
+        ]);
+        if (locs.status === 'fulfilled') {
+          document.getElementById('stat-localities').textContent =
+            locs.value.length.toLocaleString();
+        }
+      } catch { /* ignore */ }
+    }
+    loadStats();
+  </script>
+</body>
+</html>

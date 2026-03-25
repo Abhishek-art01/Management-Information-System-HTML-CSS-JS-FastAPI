@@ -1,0 +1,119 @@
+/* Homepage-specific styles — theme.css handles the base */
+
+/* ── Welcome Banner ─────────────────────── */
+.welcome-banner {
+  position: relative;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 28px 32px;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+.welcome-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.welcome-banner h2 {
+  font-size: 1.3rem;
+  margin-bottom: 6px;
+}
+.welcome-banner h2 strong { color: var(--accent); }
+.welcome-banner p { font-size: 0.875rem; color: var(--text-secondary); }
+
+.banner-glow {
+  position: absolute;
+  top: -40%; right: -5%;
+  width: 380px; height: 380px;
+  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ── Modules Grid ───────────────────────── */
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.module-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  text-decoration: none;
+  color: inherit;
+  transition: all var(--t-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.module-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--accent-glow);
+  opacity: 0;
+  transition: opacity var(--t-base);
+}
+.module-card:hover::before { opacity: 1; }
+.module-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-accent);
+}
+
+.module-icon {
+  width: 44px; height: 44px;
+  border-radius: var(--r-md);
+  display: grid; place-items: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.module-body {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+.module-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+.module-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.module-arrow {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  position: relative;
+  z-index: 1;
+  transition: all var(--t-base);
+}
+.module-card:hover .module-arrow {
+  color: var(--accent);
+  transform: translateX(4px);
+}
+
+/* ── Responsive ─────────────────────────── */
+@media (max-width: 600px) {
+  .welcome-inner { flex-direction: column; align-items: flex-start; }
+  .modules-grid  { grid-template-columns: 1fr; }
+}
