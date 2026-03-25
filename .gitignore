@@ -1,48 +1,25 @@
-# 🔒 Environment variables
+# Environment files
 
 .env
-*.env
 
-# 🐍 Python
+# Python cache
 
 **pycache**/
 *.pyc
-*.pyo
-*.pyd
-*.sqlite3
 
-# 📦 Virtual environment
+# Virtual environment
 
 .venv/
-venv/
-env/
 
-# 📁 VS Code
+# Node modules (if any)
+
+node_modules/
+
+# VS Code
 
 .vscode/
 
-# 🧪 Logs
-
-*.log
-
-# 📦 Node (if using JS tools)
-
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# 🖼️ OS files
+# System files
 
 .DS_Store
 Thumbs.db
-
-# 🔥 Build / cache
-
-dist/
-build/
-
-# ⚙️ Misc
-
-*.swp
-*.bak
