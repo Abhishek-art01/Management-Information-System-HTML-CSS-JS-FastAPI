@@ -57,6 +57,9 @@ def _clean_cell_value(x):
 # ==========================================
 # HELPER: BANK SPECIFIC CLEANERS
 # ==========================================
+# ==========================================
+# HELPER: ICICI SPECIFIC CLEANER
+# ==========================================
 def _process_icici(pdf_obj):
     all_tables = []
     for page in pdf_obj.pages:
@@ -100,8 +103,32 @@ def _process_icici(pdf_obj):
 
     df = df.drop(columns=["nan", "amount_rupees_credit"], errors="ignore")
 
-    rename_map = {"transaction_description": "plaza_name", "date_time": "travel_date_time", "vehicle_no": "vehicle_number", "amount_rupees_debit": "tag_debit_credit"}
-    df = df.rename(columns=rename_map)
+    # 🔥 THE FIX: Smarter Column Mapping
+    col_map = {}
+    for col in df.columns:
+        c = str(col).lower()
+        if "description" in c or "plaza" in c:
+            col_map[col] = "plaza_name"
+        elif "date" in c and "time" in c:
+            col_map[col] = "travel_date_time"
+        elif "debit" in c or ("amount" in c and "dr" in c):
+            col_map[col] = "tag_debit_credit"
+        elif "transaction" in c and "id" in c:
+            col_map[col] = "unique_transaction_id"
+        elif "rrn" in c:
+            col_map[col] = "unique_transaction_id"
+        elif "activity" in c:
+            col_map[col] = "activity"
+            
+    df = df.rename(columns=col_map)
+    df = df.rename(columns={"vehicle_no": "vehicle_number"})
+
+    # Fallback in case ID was named something completely different
+    if "unique_transaction_id" not in df.columns:
+        for col in df.columns:
+            if "id" in str(col) and "plaza" not in str(col) and "lane" not in str(col):
+                df = df.rename(columns={col: "unique_transaction_id"})
+                break
 
     subset_cols = ["vehicle_number", "travel_date_time", "unique_transaction_id", "plaza_name", "activity", "tag_debit_credit"]
     existing_subset = [c for c in subset_cols if c in df.columns]
@@ -115,6 +142,9 @@ def _process_icici(pdf_obj):
 
     df = df[final_columns]
 
+    # Clean multi-line IDs and slashes out of the ICICI ID string
+    df["unique_transaction_id"] = df["unique_transaction_id"].astype(str).str.replace(r"[\n\s/]+", "", regex=True)
+
     if "plaza_name" in df.columns:
         df = df[df["plaza_name"].astype(str).str.contains("transaction description", case=False, na=False) == False]
 
@@ -123,7 +153,6 @@ def _process_icici(pdf_obj):
     final_title_map = {"vehicle_number": "Vehicle No", "travel_date_time": "Travel Date Time", "unique_transaction_id": "Unique Transaction ID", "plaza_name": "Plaza Name", "plaza_id": "Plaza ID", "activity": "Activity", "tag_debit_credit": "Tag Dr/Cr"}
     df.rename(columns=final_title_map, inplace=True)
     return df
-
 
 # ==========================================
 # HELPER: IDFC SPECIFIC CLEANER

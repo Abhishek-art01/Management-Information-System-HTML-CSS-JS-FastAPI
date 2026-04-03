@@ -10,6 +10,7 @@
 # Virtual environment
 
 .venv/
+generated/
 
 # Node modules (if any)
 
