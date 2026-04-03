@@ -1,0 +1,31 @@
+# Environment files
+
+.env
+
+# Python cache
+
+**pycache**/
+*.pyc
+
+# Virtual environment
+
+.venv/
+
+# Node modules (if any)
+
+node_modules/
+
+# VS Code
+
+.vscode/
+
+# System files
+
+.DS_Store
+Thumbs.db
+logs/
+<<<<<<< HEAD
+venv-mis/
+=======
+venv-mis/
+>>>>>>> c249343687472849d266b85422637c6870800d88

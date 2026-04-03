@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toll Audit Manager</title>
+    <link rel="stylesheet" href="/components-static/theme.css">
+    <link rel="stylesheet" href="/components-static/Sidebar.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="/components-static/Sidebar.js" defer></script>
+    <style>
+        :root {
+            --bg:#0a0e14; --surface:#111720; --surface2:#161d2a; --surface3:#1c2638;
+            --border:#252f42; --border2:#2e3d57;
+            --accent:#4d9fff; --accent2:#ff6b6b; --green:#3ddc84;
+            --yellow:#ffc947; --purple:#b08aff;
+            --text:#dce8f5; --text-muted:#6b809c; --text-dim:#4a5f7a;
+            --card-radius:12px; --font-main:'DM Sans',sans-serif; --font-mono:'IBM Plex Mono',monospace;
+        }
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:var(--font-main);background:var(--bg);color:var(--text);min-height:100vh;}
+
+        /* TOPBAR */
+        .topbar{position:sticky;top:0;z-index:200;background:rgba(10,14,20,.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 24px;display:flex;justify-content:space-between;align-items:stretch;height:54px;}
+        .topbar-left{display:flex;align-items:center;gap:14px;}
+        .topbar-right{display:flex;align-items:center;gap:8px;}
+        .topbar-brand{font-family:var(--font-mono);font-size:.88rem;font-weight:600;color:var(--accent);letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+        .topbar-brand::before{content:'';display:inline-block;width:8px;height:8px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent);}
+        .tabs{display:flex;align-items:stretch;gap:2px;margin-left:4px;}
+        .tab-btn{display:flex;align-items:center;gap:7px;padding:0 18px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);font-family:var(--font-main);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;}
+        .tab-btn:hover{color:var(--text);}
+        /* Updated tab accent = green */
+        .tab-btn.active#tab-updated{color:var(--green);border-bottom-color:var(--green);}
+        /* Pending tab accent = yellow */
+        .tab-btn.active#tab-pending{color:var(--yellow);border-bottom-color:var(--yellow);}
+        .tab-count{font-family:var(--font-mono);font-size:.67rem;font-weight:700;padding:2px 7px;border-radius:20px;line-height:1.4;}
+        #tab-updated.active .tab-count{background:rgba(61,220,132,.15);border:1px solid rgba(61,220,132,.35);color:var(--green);}
+        #tab-pending.active .tab-count{background:rgba(255,201,71,.12);border:1px solid rgba(255,201,71,.3);color:var(--yellow);}
+        .tab-btn:not(.active) .tab-count{background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);}
+        .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:7px;cursor:pointer;font-family:var(--font-main);font-size:.8rem;font-weight:600;transition:all .15s;white-space:nowrap;}
+        .btn-primary{background:var(--accent);color:#0a0e14;}
+        .btn-primary:hover{background:#6ab3ff;transform:translateY(-1px);}
+        .btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+        .btn-green{background:var(--green);color:#0a0e14;}
+        .btn-green:hover{background:#5aeba0;transform:translateY(-1px);}
+        .btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+        .btn-ghost:hover{background:var(--surface2);color:var(--text);border-color:var(--border2);}
+
+        /* FILTER PANEL */
+        .filter-panel{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;}
+        .filter-group{display:flex;flex-direction:column;gap:5px;}
+        .filter-group label{font-size:.67rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.8px;font-family:var(--font-mono);display:flex;align-items:center;gap:5px;}
+
+        /* MULTI-SELECT */
+        .ms-wrap{position:relative;}
+        .ms-trigger{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:.8rem;font-family:var(--font-main);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:6px;min-width:160px;user-select:none;transition:border-color .15s;}
+        .ms-trigger:hover,.ms-trigger.open{border-color:var(--accent);}
+        .ms-trigger.required-empty{border-color:rgba(255,201,71,.6);}
+        .ms-trigger-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;color:var(--text-muted);font-size:.8rem;}
+        .ms-trigger-text.has-selection{color:var(--accent);font-weight:600;}
+        .ms-trigger-text.required-hint{color:var(--yellow);}
+        .ms-trigger-chevron{font-size:.6rem;color:var(--text-dim);flex-shrink:0;transition:transform .15s;}
+        .ms-trigger.open .ms-trigger-chevron{transform:rotate(180deg);}
+        .ms-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;min-width:240px;max-width:360px;background:var(--surface2);border:1px solid var(--accent);border-radius:8px;z-index:1000;box-shadow:0 8px 28px rgba(0,0,0,.6);overflow:hidden;}
+        .ms-dropdown.open{display:block;}
+        .ms-search{width:100%;background:var(--bg);border:none;border-bottom:1px solid var(--border);color:var(--text);padding:8px 12px;font-size:.78rem;font-family:var(--font-main);outline:none;}
+        .ms-search::placeholder{color:var(--text-muted);}
+        .ms-list{max-height:220px;overflow-y:auto;padding:4px 0;}
+        .ms-option{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;font-size:.79rem;transition:background .1s;user-select:none;}
+        .ms-option:hover{background:rgba(77,159,255,.08);}
+        .ms-option input[type="checkbox"]{appearance:none;width:14px;height:14px;border:2px solid var(--border2);border-radius:3px;cursor:pointer;flex-shrink:0;position:relative;transition:all .1s;}
+        .ms-option input[type="checkbox"]:checked{background:var(--accent);border-color:var(--accent);}
+        .ms-option input[type="checkbox"]:checked::after{content:'✓';color:#0a0e14;font-size:9px;font-weight:900;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
+        .ms-no-results{padding:10px 12px;font-size:.76rem;color:var(--text-muted);}
+        .ms-footer{display:flex;justify-content:space-between;padding:6px 10px;border-top:1px solid var(--border);gap:6px;}
+        .ms-footer button{flex:1;background:none;border:1px solid var(--border);color:var(--text-muted);padding:4px 8px;border-radius:4px;font-size:.7rem;cursor:pointer;font-family:var(--font-main);transition:all .15s;}
+        .ms-footer button:hover{background:var(--surface3);color:var(--text);}
+        .ms-footer .ms-btn-all{border-color:rgba(77,159,255,.35);color:var(--accent);}
+
+        .filter-actions{display:flex;gap:8px;align-items:flex-end;margin-left:auto;}
+        .filter-divider{width:1px;height:36px;background:var(--border);align-self:flex-end;}
+
+        /* CHIPS */
+        .active-filters{padding:7px 24px;display:flex;gap:8px;flex-wrap:wrap;background:var(--bg);border-bottom:1px solid var(--border);align-items:center;}
+        .filter-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(77,159,255,.08);border:1px solid rgba(77,159,255,.25);color:var(--accent);padding:3px 9px;border-radius:20px;font-size:.71rem;font-family:var(--font-mono);}
+        .filter-chip.chip-date{background:rgba(255,201,71,.1);border-color:rgba(255,201,71,.35);color:var(--yellow);}
+        .filter-chip.chip-gap{background:rgba(176,138,255,.1);border-color:rgba(176,138,255,.3);color:var(--purple);}
+        .filter-chip button{background:none;border:none;color:inherit;cursor:pointer;font-size:.82rem;line-height:1;padding:0 2px;opacity:.7;}
+        .filter-chip button:hover{opacity:1;}
+
+        /* STATS BAR */
+        .stats-bar{display:flex;gap:16px;align-items:center;padding:9px 24px;background:var(--surface);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+        .stat-item{display:flex;align-items:center;gap:6px;font-size:.77rem;color:var(--text-muted);}
+        .stat-item strong{color:var(--text);font-family:var(--font-mono);}
+        .stat-divider{width:1px;height:14px;background:var(--border);}
+
+        /* PAGES */
+        .page{display:none;} .page.active{display:block;}
+        .main-content{padding:18px 24px;display:flex;flex-direction:column;gap:12px;}
+
+        /* LANDING */
+        .date-landing{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:58vh;gap:14px;text-align:center;padding:40px 24px;}
+        .date-landing-icon{font-size:3.5rem;color:var(--border2);margin-bottom:6px;}
+        .date-landing h2{font-size:1.1rem;color:var(--text);font-weight:600;}
+        .date-landing p{font-size:.82rem;color:var(--text-muted);max-width:380px;line-height:1.7;}
+        .landing-steps{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
+        .landing-step{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:.8rem;color:var(--text-muted);}
+        .landing-step-num{width:22px;height:22px;border-radius:50%;background:rgba(77,159,255,.15);border:1px solid rgba(77,159,255,.3);color:var(--accent);font-family:var(--font-mono);font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+        /* LOADER / EMPTY */
+        .loader{text-align:center;padding:60px 20px;color:var(--text-muted);display:flex;flex-direction:column;align-items:center;gap:10px;}
+        .loader i{font-size:2rem;color:var(--accent);}
+        .empty-state{text-align:center;padding:80px 20px;color:var(--text-muted);}
+        .empty-state i{font-size:2.5rem;margin-bottom:14px;display:block;}
+        .empty-state h3{font-size:1rem;color:var(--text);margin-bottom:6px;}
+
+        /* CARDS */
+        .mapping-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--card-radius);overflow:hidden;transition:border-color .2s,box-shadow .2s;}
+        .mapping-card:hover{border-color:var(--border2);box-shadow:0 4px 24px rgba(0,0,0,.3);}
+        .mapping-card.is-updated{border-color:rgba(61,220,132,.2);}
+        .mapping-card.is-updated:hover{border-color:rgba(61,220,132,.45);}
+
+        /* CARD HEADER */
+        .card-header{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px;}
+        .card-header-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+        .card-header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+        .cab-reg{font-family:var(--font-mono);font-weight:600;font-size:.85rem;color:var(--text);background:var(--bg);padding:3px 10px;border-radius:5px;border:1px solid var(--border2);display:flex;align-items:center;gap:5px;}
+        .trip-id-badge{font-family:var(--font-mono);font-size:.82rem;font-weight:700;color:var(--yellow);background:rgba(255,201,71,.08);border:1px solid rgba(255,201,71,.3);padding:3px 10px;border-radius:5px;display:flex;align-items:center;gap:5px;}
+        .emp-count-badge{font-family:var(--font-mono);font-size:.74rem;font-weight:700;color:var(--purple);background:rgba(176,138,255,.1);border:1px solid rgba(176,138,255,.3);padding:3px 9px;border-radius:5px;display:flex;align-items:center;gap:5px;}
+        .direction-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700;font-family:var(--font-mono);}
+        .direction-pickup{background:rgba(61,220,132,.12);border:1px solid rgba(61,220,132,.35);color:#3ddc84;}
+        .direction-drop{background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.35);color:#ff6b6b;}
+        .direction-in{background:rgba(77,159,255,.12);border:1px solid rgba(77,159,255,.35);color:#4d9fff;}
+        .direction-out{background:rgba(255,201,71,.12);border:1px solid rgba(255,201,71,.35);color:#ffc947;}
+        .updated-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700;font-family:var(--font-mono);background:rgba(61,220,132,.12);border:1px solid rgba(61,220,132,.35);color:var(--green);}
+        .pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:600;font-family:var(--font-mono);}
+        .pill-blue{background:rgba(77,159,255,.1);border:1px solid rgba(77,159,255,.22);color:var(--accent);}
+        .pill-yellow{background:rgba(255,201,71,.1);border:1px solid rgba(255,201,71,.22);color:var(--yellow);}
+
+        /* CARD BODY */
+        .card-body{display:flex;flex-wrap:wrap;}
+        .trip-info{flex:1;min-width:280px;padding:12px 14px;display:flex;flex-direction:column;gap:9px;border-right:1px dashed var(--border);}
+        .meta-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface3);border:1px solid var(--border);border-radius:7px;padding:7px 10px;}
+        .meta-sep{width:1px;height:14px;background:var(--border2);flex-shrink:0;}
+        .meta-item{display:flex;align-items:center;gap:5px;font-size:.76rem;color:var(--text-muted);}
+        .meta-item strong{color:var(--text);font-weight:600;}
+
+        /* EMPLOYEE BOX */
+        .employees-box{background:var(--surface3);border:1px solid var(--border);border-left:2px solid rgba(176,138,255,.5);border-radius:7px;overflow:hidden;}
+        .employees-box-header{display:flex;align-items:center;gap:6px;padding:5px 10px;background:rgba(176,138,255,.07);border-bottom:1px solid var(--border);font-size:.62rem;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.9px;font-family:var(--font-mono);}
+        .emp-entry{padding:7px 10px;border-bottom:1px solid var(--border);}
+        .emp-entry:last-child{border-bottom:none;}
+        .emp-entry-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:3px;}
+        .emp-entry-name{font-weight:600;font-size:.82rem;color:var(--text);}
+        .emp-entry-id{font-family:var(--font-mono);font-size:.7rem;color:var(--text-muted);background:var(--bg);padding:1px 7px;border-radius:4px;border:1px solid var(--border2);}
+        .emp-entry-gender{font-size:.68rem;color:var(--text-dim);background:var(--bg);padding:1px 7px;border-radius:4px;border:1px solid var(--border2);}
+        .emp-entry-addr{font-size:.71rem;color:var(--text-muted);line-height:1.4;display:flex;align-items:flex-start;gap:5px;}
+        .emp-entry-addr i{color:var(--accent2);font-size:.68rem;margin-top:2px;flex-shrink:0;}
+        .emp-entry-addr-text{flex:1;}
+        .emp-entry-landmark{font-weight:600;color:var(--accent2);}
+
+        /* TIMES */
+        .times-block{background:var(--surface3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;}
+        .times-block-header{font-size:.65rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.8px;font-family:var(--font-mono);display:flex;align-items:center;justify-content:space-between;}
+        .times-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+        .time-block{display:flex;align-items:center;gap:6px;}
+        .time-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+        .time-dot.pickup{background:#3ddc84;box-shadow:0 0 6px #3ddc84;}
+        .time-dot.drop{background:#ff6b6b;box-shadow:0 0 6px #ff6b6b;}
+        .time-label{font-size:.68rem;color:var(--text-muted);font-weight:600;}
+        .time-value{font-family:var(--font-mono);font-size:.82rem;font-weight:600;color:var(--text);}
+        .times-arrow{color:var(--border2);font-size:.65rem;}
+        .time-edit-row{display:none;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px;padding:6px 8px;background:rgba(77,159,255,.05);border:1px dashed rgba(77,159,255,.25);border-radius:6px;}
+        .time-edit-row.visible{display:flex;}
+        .time-edit-label{font-size:.68rem;color:var(--accent);font-weight:700;font-family:var(--font-mono);min-width:50px;}
+        .time-edit-input{font-family:var(--font-mono);font-size:.78rem;background:var(--bg);border:1px solid var(--accent);color:var(--text);padding:4px 8px;border-radius:5px;outline:none;width:100px;}
+        .time-edit-input.err{border-color:var(--accent2);}
+        .btn-micro{padding:3px 8px;font-size:.68rem;border-radius:4px;border:none;cursor:pointer;font-family:var(--font-mono);font-weight:600;}
+        .btn-micro-edit{background:rgba(77,159,255,.15);color:var(--accent);}
+        .btn-micro-save{background:rgba(61,220,132,.15);color:var(--green);}
+        .btn-micro-cancel{background:rgba(255,107,107,.12);color:var(--accent2);}
+        .journey-row{display:flex;gap:6px;align-items:center;font-size:.74rem;flex-wrap:wrap;}
+
+        /* TOLL COLUMN */
+        .toll-options{flex:1.4;min-width:280px;padding:12px 14px;display:flex;flex-direction:column;gap:7px;}
+        .tolls-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;}
+        .tolls-title{font-size:.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-family:var(--font-mono);display:flex;align-items:center;gap:6px;}
+        .tolls-count{background:rgba(176,138,255,.12);border:1px solid rgba(176,138,255,.25);color:var(--purple);padding:1px 7px;border-radius:10px;}
+
+        .toll-item{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;background:var(--bg);padding:9px 11px;border-radius:7px;border:1px solid var(--border);transition:all .15s;}
+        .toll-item:hover{border-color:var(--accent);background:rgba(77,159,255,.04);}
+        .toll-item.selected{border-color:var(--green);background:rgba(61,220,132,.05);}
+        .toll-item.is-confirmed-route{border-color:rgba(61,220,132,.35);background:rgba(61,220,132,.03);}
+
+        .toll-middle{display:flex;align-items:flex-start;gap:9px;cursor:pointer;min-width:0;}
+        .toll-middle input[type="checkbox"]{appearance:none;width:16px;height:16px;border:2px solid var(--border2);border-radius:4px;cursor:pointer;flex-shrink:0;transition:all .15s;position:relative;margin-top:2px;}
+        .toll-middle input[type="checkbox"]:checked{background:var(--green);border-color:var(--green);}
+        .toll-middle input[type="checkbox"]:checked::after{content:'✓';color:#0a0e14;font-size:10px;font-weight:900;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
+        .toll-details{flex:1;min-width:0;}
+        .toll-datetime{font-family:var(--font-mono);font-size:.76rem;font-weight:600;color:var(--text);margin-bottom:2px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+        .toll-desc{font-size:.72rem;color:var(--text-muted);}
+        .toll-meta-row{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;}
+        .toll-name-tag{display:inline-block;background:rgba(176,138,255,.12);border:1px solid rgba(176,138,255,.25);color:var(--purple);padding:1px 7px;border-radius:4px;font-size:.65rem;font-family:var(--font-mono);}
+        .toll-match-count{display:inline-flex;align-items:center;gap:3px;background:rgba(255,201,71,.1);border:1px solid rgba(255,201,71,.3);color:var(--yellow);padding:1px 7px;border-radius:4px;font-size:.63rem;font-family:var(--font-mono);font-weight:700;}
+        .toll-match-count.single{background:rgba(61,220,132,.1);border-color:rgba(61,220,132,.3);color:var(--green);}
+        .route-confirmed-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(61,220,132,.1);border:1px solid rgba(61,220,132,.3);color:var(--green);font-size:.6rem;font-weight:700;font-family:var(--font-mono);border-radius:4px;padding:1px 6px;}
+        .toll-amount{font-family:var(--font-mono);font-weight:700;font-size:.9rem;padding:4px 10px;border-radius:5px;white-space:nowrap;align-self:center;flex-shrink:0;}
+        .toll-amount-pending{color:var(--accent2);background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.2);}
+        .toll-amount-updated{color:var(--green);background:rgba(61,220,132,.08);border:1px solid rgba(61,220,132,.2);}
+        .toll-right{display:flex;align-items:center;}
+        .btn-not-route{padding:5px 7px;border:1px solid rgba(255,107,107,.3);border-radius:5px;cursor:pointer;font-size:.65rem;font-weight:700;font-family:var(--font-mono);background:rgba(255,107,107,.08);color:var(--accent2);white-space:nowrap;display:flex;align-items:center;gap:3px;transition:all .15s;flex-shrink:0;}
+        .btn-not-route:hover{background:rgba(255,107,107,.18);transform:translateY(-1px);}
+        .toll-time-edit-input{font-family:var(--font-mono);font-size:.73rem;background:var(--surface);border:1px solid var(--accent);color:var(--text);padding:3px 7px;border-radius:4px;outline:none;width:148px;display:none;}
+        .toll-time-edit-input.visible{display:block;}
+        .btn-tiny{padding:2px 6px;font-size:.65rem;border-radius:3px;border:none;cursor:pointer;font-family:var(--font-mono);}
+        .btn-edit-time{background:rgba(77,159,255,.12);color:var(--accent);}
+        .btn-save-time{background:rgba(61,220,132,.15);color:var(--green);}
+        .btn-cancel-time{background:rgba(255,107,107,.12);color:var(--accent2);}
+        .toll-item-ro{display:flex;align-items:center;gap:10px;background:rgba(61,220,132,.04);padding:9px 11px;border-radius:7px;border:1px solid rgba(61,220,132,.18);}
+
+        /* LINK BUTTON */
+        .btn-link{background:linear-gradient(135deg,#3ddc84,#2ab96a);color:#0a0e14;border:none;padding:9px;font-weight:700;border-radius:7px;cursor:pointer;font-size:.83rem;font-family:var(--font-main);transition:all .15s;display:flex;align-items:center;justify-content:center;gap:7px;margin-top:2px;}
+        .btn-link:hover{background:linear-gradient(135deg,#5aeba0,#3ddc84);transform:translateY(-1px);box-shadow:0 4px 12px rgba(61,220,132,.25);}
+        .btn-link:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;}
+        .btn-link-hint{font-size:.67rem;color:var(--text-dim);text-align:center;font-family:var(--font-mono);padding:3px 0 0;display:flex;align-items:center;justify-content:center;gap:5px;}
+        .linked-total{background:rgba(61,220,132,.07);border:1px solid rgba(61,220,132,.25);border-radius:6px;padding:8px 12px;display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap;}
+        .linked-total-label{font-size:.72rem;color:var(--green);font-weight:700;font-family:var(--font-mono);}
+        .linked-total-val{font-family:var(--font-mono);font-size:.85rem;font-weight:700;color:var(--text);}
+
+        ::-webkit-scrollbar{width:5px;}
+        ::-webkit-scrollbar-track{background:var(--bg);}
+        ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+    </style>
+</head>
+<body class="page-wrapper">
+<main class="main-content">
+
+<!-- TOPBAR -->
+<div class="topbar">
+    <div class="topbar-left">
+        <div class="topbar-brand"><i class="fa-solid fa-receipt" style="font-size:.8rem;"></i> TOLL AUDIT</div>
+        <div class="tabs">
+            <!-- ★ UPDATED FIRST ★ -->
+            <button class="tab-btn active" id="tab-updated" onclick="switchTab('updated')">
+                <i class="fa-solid fa-circle-check" style="font-size:.72rem;"></i> Updated
+                <span class="tab-count" id="count-updated">—</span>
+            </button>
+            <!-- PENDING SECOND -->
+            <button class="tab-btn" id="tab-pending" onclick="switchTab('pending')">
+                <i class="fa-solid fa-clock" style="font-size:.72rem;"></i> Pending
+                <span class="tab-count" id="count-pending">—</span>
+            </button>
+        </div>
+    </div>
+    <div class="topbar-right">
+        <button class="btn btn-ghost" id="btn-filters" onclick="toggleFilters()"><i class="fa-solid fa-sliders"></i> Filters</button>
+        <button class="btn btn-primary" id="btn-refresh" onclick="applyAndLoad()" disabled><i class="fa-solid fa-rotate"></i> Refresh</button>
+    </div>
+</div>
+
+<!-- FILTER PANEL -->
+<div class="filter-panel" id="filter-panel" style="display:none;">
+    <div class="filter-group">
+        <label><i class="fa-regular fa-calendar" style="color:var(--yellow);"></i> Shift Date <span style="color:var(--accent2);font-size:.65rem;">*required</span></label>
+        <div class="ms-wrap" id="wrap-date">
+            <div class="ms-trigger required-empty" id="trig-date" onclick="msToggle('date')">
+                <span class="ms-trigger-text required-hint" id="text-date">Select date(s)…</span>
+                <i class="fa-solid fa-chevron-down ms-trigger-chevron"></i>
+            </div>
+            <div class="ms-dropdown" id="drop-date">
+                <input class="ms-search" placeholder="Search date…" oninput="msSearch('date',this.value)" onclick="event.stopPropagation()">
+                <div class="ms-list" id="list-date"><div class="ms-no-results"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div></div>
+                <div class="ms-footer"><button class="ms-btn-all" onclick="msSelectAll('date')">All</button><button onclick="msClear('date')">Clear</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="filter-group">
+        <label><i class="fa-solid fa-clock-rotate-left" style="color:var(--purple);"></i> Time Gap Window</label>
+        <div class="ms-wrap">
+            <div class="ms-trigger" id="trig-gap" onclick="msToggle('gap')">
+                <span class="ms-trigger-text" id="text-gap">All (±4h)</span>
+                <i class="fa-solid fa-chevron-down ms-trigger-chevron"></i>
+            </div>
+            <div class="ms-dropdown" id="drop-gap" style="min-width:200px;">
+                <input class="ms-search" placeholder="Search gap…" oninput="msSearch('gap',this.value)" onclick="event.stopPropagation()">
+                <div class="ms-list" id="list-gap"></div>
+                <div class="ms-footer">
+                    <button class="ms-btn-all" onclick="msSelectAll('gap')">All</button>
+                    <button onclick="msClear('gap')">Clear</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+        <label><i class="fa-solid fa-arrows-left-right"></i> Direction</label>
+        <div class="ms-wrap"><div class="ms-trigger" id="trig-direction" onclick="msToggle('direction')"><span class="ms-trigger-text" id="text-direction">All</span><i class="fa-solid fa-chevron-down ms-trigger-chevron"></i></div><div class="ms-dropdown" id="drop-direction"><input class="ms-search" placeholder="Search…" oninput="msSearch('direction',this.value)" onclick="event.stopPropagation()"><div class="ms-list" id="list-direction"></div><div class="ms-footer"><button class="ms-btn-all" onclick="msSelectAll('direction')">All</button><button onclick="msClear('direction')">Clear</button></div></div></div>
+    </div>
+    <div class="filter-group">
+        <label><i class="fa-regular fa-building"></i> Office</label>
+        <div class="ms-wrap"><div class="ms-trigger" id="trig-office" onclick="msToggle('office')"><span class="ms-trigger-text" id="text-office">All</span><i class="fa-solid fa-chevron-down ms-trigger-chevron"></i></div><div class="ms-dropdown" id="drop-office"><input class="ms-search" placeholder="Search…" oninput="msSearch('office',this.value)" onclick="event.stopPropagation()"><div class="ms-list" id="list-office"></div><div class="ms-footer"><button class="ms-btn-all" onclick="msSelectAll('office')">All</button><button onclick="msClear('office')">Clear</button></div></div></div>
+    </div>
+    <div class="filter-group">
+        <label><i class="fa-solid fa-map-pin"></i> Landmark</label>
+        <div class="ms-wrap"><div class="ms-trigger" id="trig-landmark" onclick="msToggle('landmark')"><span class="ms-trigger-text" id="text-landmark">All</span><i class="fa-solid fa-chevron-down ms-trigger-chevron"></i></div><div class="ms-dropdown" id="drop-landmark"><input class="ms-search" placeholder="Search…" oninput="msSearch('landmark',this.value)" onclick="event.stopPropagation()"><div class="ms-list" id="list-landmark"></div><div class="ms-footer"><button class="ms-btn-all" onclick="msSelectAll('landmark')">All</button><button onclick="msClear('landmark')">Clear</button></div></div></div>
+    </div>
+    <div class="filter-group">
+        <label><i class="fa-solid fa-car"></i> Cab Reg</label>
+        <div class="ms-wrap"><div class="ms-trigger" id="trig-cab" onclick="msToggle('cab')"><span class="ms-trigger-text" id="text-cab">All</span><i class="fa-solid fa-chevron-down ms-trigger-chevron"></i></div><div class="ms-dropdown" id="drop-cab"><input class="ms-search" placeholder="Search…" oninput="msSearch('cab',this.value)" onclick="event.stopPropagation()"><div class="ms-list" id="list-cab"></div><div class="ms-footer"><button class="ms-btn-all" onclick="msSelectAll('cab')">All</button><button onclick="msClear('cab')">Clear</button></div></div></div>
+    </div>
+    <div class="filter-group">
+        <label><i class="fa-solid fa-receipt"></i> Toll Name</label>
+        <div class="ms-wrap"><div class="ms-trigger" id="trig-toll" onclick="msToggle('toll')"><span class="ms-trigger-text" id="text-toll">All</span><i class="fa-solid fa-chevron-down ms-trigger-chevron"></i></div><div class="ms-dropdown" id="drop-toll"><input class="ms-search" placeholder="Search…" oninput="msSearch('toll',this.value)" onclick="event.stopPropagation()"><div class="ms-list" id="list-toll"></div><div class="ms-footer"><button class="ms-btn-all" onclick="msSelectAll('toll')">All</button><button onclick="msClear('toll')">Clear</button></div></div></div>
+    </div>
+    <div class="filter-group">
+        <label><i class="fa-solid fa-hashtag"></i> Trip ID</label>
+        <div class="ms-wrap"><div class="ms-trigger" id="trig-tripid" onclick="msToggle('tripid')"><span class="ms-trigger-text" id="text-tripid">All</span><i class="fa-solid fa-chevron-down ms-trigger-chevron"></i></div><div class="ms-dropdown" id="drop-tripid"><input class="ms-search" placeholder="Search…" oninput="msSearch('tripid',this.value)" onclick="event.stopPropagation()"><div class="ms-list" id="list-tripid"></div><div class="ms-footer"><button class="ms-btn-all" onclick="msSelectAll('tripid')">All</button><button onclick="msClear('tripid')">Clear</button></div></div></div>
+    </div>
+    <div class="filter-actions">
+        <button class="btn btn-green" id="btn-apply" onclick="applyAndLoad()" disabled><i class="fa-solid fa-bolt"></i> Load Data</button>
+        <button class="btn btn-ghost" onclick="clearSecondaryFilters()"><i class="fa-solid fa-xmark"></i> Clear</button>
+    </div>
+</div>
+
+<div class="active-filters" id="active-filters" style="display:none;"></div>
+<div class="stats-bar" id="stats-bar" style="display:none;">
+    <div class="stat-item"><i class="fa-solid fa-layer-group" style="color:var(--accent);"></i> Showing: <strong id="stat-showing">—</strong></div>
+    <div class="stat-divider"></div>
+    <div class="stat-item"><i class="fa-solid fa-receipt" style="color:var(--purple);"></i> Tolls: <strong id="stat-tolls">—</strong></div>
+    <div class="stat-divider"></div>
+    <div class="stat-item"><i class="fa-solid fa-indian-rupee-sign" style="color:var(--green);"></i> Total: <strong id="stat-amount">—</strong></div>
+    <div class="stat-divider"></div>
+    <div class="stat-item"><i class="fa-regular fa-calendar" style="color:var(--yellow);"></i> Date(s): <strong id="stat-date">—</strong></div>
+    <div class="stat-divider"></div>
+    <div class="stat-item"><i class="fa-solid fa-clock" style="color:var(--purple);"></i> Gap: <strong id="stat-gap">—</strong></div>
+</div>
+
+<!-- ★ UPDATED PAGE FIRST ★ -->
+<div class="page active" id="page-updated">
+    <div class="main-content" id="grid-updated">
+        <div class="date-landing">
+            <div class="date-landing-icon"><i class="fa-solid fa-circle-check" style="color:var(--green);"></i></div>
+            <h2>Select date(s) to view linked tolls</h2>
+            <p>All trips where tolls have already been linked will appear here.</p>
+        </div>
+    </div>
+</div>
+
+<!-- PENDING PAGE SECOND -->
+<div class="page" id="page-pending">
+    <div class="main-content" id="grid-pending">
+        <div class="date-landing">
+            <div class="date-landing-icon"><i class="fa-regular fa-calendar-days"></i></div>
+            <h2>Select date(s) to load toll matches</h2>
+            <p>One card per Trip ID. Duplicate trips are merged with all passengers shown together.</p>
+            <div class="landing-steps">
+                <div class="landing-step"><span class="landing-step-num">1</span> Pick <strong>Shift Dates</strong></div>
+                <div class="landing-step"><span class="landing-step-num">2</span> Choose gap direction <strong>+ / −</strong>, then magnitude with <strong>− / +</strong> buttons</div>
+                <div class="landing-step"><span class="landing-step-num">3</span> <strong>Not Route</strong> = save DB rule &nbsp;|&nbsp; <strong>Link Selected Tolls</strong> = link &amp; auto-save route rules</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+let allMatches      = [];
+let filteredMatches = [];
+let currentTab      = 'updated'; // ★ default tab is now updated
+let isLoading       = false;
+let loadedDates     = [];
+let loadedGap       = null;
+let tollMatchCounts = {};
+
+// ── GAP FILTER ──
+const GAP_OPTION_MINS = [];
+for(let m=-240; m<=240; m+=20){ if(m!==0) GAP_OPTION_MINS.push(m); }
+function gapMinLabel(v){
+    const abs=Math.abs(v),sign=v>0?'+':'−';
+    const hrs=Math.floor(abs/60),mins=abs%60;
+    if(hrs===0)  return `${sign}${mins}m`;
+    if(mins===0) return `${sign}${hrs}h`;
+    return `${sign}${hrs}h ${mins}m`;
+}
+function initGapOptions(){
+    msOptions.gap=GAP_OPTION_MINS.map(v=>gapMinLabel(v));
+    msRenderList('gap','');
+}
+
+function parseMs(str){
+    if(!str) return null;
+    str=str.trim();
+    let s=str.replace(/^(\d{2})-(\d{2})-(\d{4})(.*)$/,'$3-$2-$1$4');
+    let ts=Date.parse(s);if(!isNaN(ts)) return ts;
+    ts=Date.parse(str);if(!isNaN(ts)) return ts;
+    return null;
+}
+function tripRefMs(trip){
+    const date=normalizeDate(safeStr(trip.shift_date||''));
+    const time=safeStr(trip.shift_time||trip.pickup_time||'').trim().slice(0,5);
+    if(date&&time) return parseMs(date+'T'+time+':00');
+    return null;
+}
+function tollMatchesGap(tollMs,refMs){
+    if(!msState.gap.size) return true;
+    if(tollMs===null||refMs===null) return true;
+    const diffMins=(tollMs-refMs)/60000;
+    for(const label of msState.gap){
+        const idx=msOptions.gap.indexOf(label);if(idx<0) continue;
+        const v=GAP_OPTION_MINS[idx];
+        const lo=v>0?v-20:v,hi=v>0?v:v+20;
+        if(diffMins>lo&&diffMins<=hi) return true;
+        if(v===20&&diffMins===0) return true;
+    }
+    return false;
+}
+function precomputeTimes(matches){
+    for(const m of matches){
+        m._refMs=tripRefMs(m.trip);
+        for(const t of m.tolls) t._tollMs=parseMs(safeStr(t.travel_date_time||''));
+    }
+}
+
+function deduplicateTollsByName(matches){
+    for(const m of matches){
+        const refMs=m._refMs;
+        const groups=new Map();
+        for(const t of m.tolls){
+            const name=safeStr(t.transaction_description||t.toll_name||'').trim().toUpperCase();
+            if(!name){if(!groups.has('__noname__'))groups.set('__noname__',[]);groups.get('__noname__').push(t);continue;}
+            if(!groups.has(name))groups.set(name,[]);
+            groups.get(name).push(t);
+        }
+        const kept=[];
+        for(const[name,tolls]of groups){
+            if(name==='__noname__'||tolls.length===1){kept.push(...tolls);continue;}
+            if(refMs===null){kept.push(tolls[0]);continue;}
+            let best=tolls[0],bestDiff=best._tollMs!==null?Math.abs(best._tollMs-refMs):Infinity;
+            for(let i=1;i<tolls.length;i++){const diff=tolls[i]._tollMs!==null?Math.abs(tolls[i]._tollMs-refMs):Infinity;if(diff<bestDiff){bestDiff=diff;best=tolls[i];}}
+            kept.push(best);
+        }
+        m.tolls=m.tolls.filter(t=>kept.includes(t));
+    }
+}
+
+function safeStr(v){return(v===null||v===undefined)?'':String(v);}
+function isTollUpdated(data){
+    if(data._linked===true) return true;
+    const tn=safeStr(data.trip.toll_name).trim().toLowerCase();
+    return tn!==''&&tn!=='none'&&tn!=='null'&&tn!=='nan';
+}
+function normalizeDate(raw){
+    if(!raw) return '';
+    let s=raw.toString().trim().split(/[\sT]/)[0];
+    if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const m=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})$/);
+    if(m){const yr=m[3].length===2?'20'+m[3]:m[3];return `${yr}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;}
+    try{const d=new Date(s);if(!isNaN(d))return d.toISOString().slice(0,10);}catch(e){}
+    return s;
+}
+function formatDateLabel(d){
+    try{const dt=new Date(normalizeDate(d)+'T00:00:00');if(isNaN(dt))return d;return dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return d;}
+}
+function getDirectionClass(dir){
+    if(!dir) return 'direction-in';
+    const d=dir.toUpperCase();
+    if(d.includes('PICKUP')||d.includes('PU')) return 'direction-pickup';
+    if(d.includes('DROP')||d.includes('DR'))   return 'direction-drop';
+    if(d==='OUT') return 'direction-out';
+    return 'direction-in';
+}
+function getDirectionIcon(dir){
+    if(!dir) return 'fa-arrow-right';
+    const d=dir.toUpperCase();
+    if(d.includes('PICKUP')||d.includes('PU')) return 'fa-arrow-up-from-dot';
+    if(d.includes('DROP')||d.includes('DR'))   return 'fa-arrow-down-to-dot';
+    if(d==='OUT') return 'fa-arrow-right-from-bracket';
+    return 'fa-arrow-right-to-bracket';
+}
+
+function deduplicateByTripId(matches){
+    const seenTripIds=new Map();const result=[];
+    for(const m of matches){
+        const tid=safeStr(m.trip.trip_id||'').trim();
+        if(!tid){result.push(m);continue;}
+        if(seenTripIds.has(tid)){const existing=result[seenTripIds.get(tid)];if(!existing._siblings)existing._siblings=[];existing._siblings.push(m.trip);}
+        else{seenTripIds.set(tid,result.length);result.push({...m,_siblings:[]});}
+    }
+    return result;
+}
+function buildTollMatchCounts(matches){
+    const counts={};
+    for(const m of matches)for(const t of m.tolls){const tid=safeStr(t.id);counts[tid]=(counts[tid]||0)+1;}
+    return counts;
+}
+
+// ══════════════════════════════════════════════════════
+//  MULTI-SELECT ENGINE
+// ══════════════════════════════════════════════════════
+const msState  ={date:new Set(),direction:new Set(),office:new Set(),landmark:new Set(),cab:new Set(),toll:new Set(),tripid:new Set(),gap:new Set()};
+const msOptions={date:[],direction:[],office:[],landmark:[],cab:[],toll:[],tripid:[],gap:[]};
+
+function msToggle(key){
+    const dd=document.getElementById('drop-'+key),tr=document.getElementById('trig-'+key);
+    const wasOpen=dd.classList.contains('open');
+    document.querySelectorAll('.ms-dropdown.open').forEach(e=>e.classList.remove('open'));
+    document.querySelectorAll('.ms-trigger.open').forEach(e=>e.classList.remove('open'));
+    if(!wasOpen){dd.classList.add('open');tr.classList.add('open');const s=dd.querySelector('.ms-search');if(s){s.value='';s.focus();}msRenderList(key,'');}
+}
+document.addEventListener('click',e=>{
+    if(!e.target.closest('.ms-wrap')){
+        document.querySelectorAll('.ms-dropdown.open').forEach(el=>el.classList.remove('open'));
+        document.querySelectorAll('.ms-trigger.open').forEach(el=>el.classList.remove('open'));
+    }
+});
+function msRenderList(key,search){
+    const listEl=document.getElementById('list-'+key),sel=msState[key],lower=search.toLowerCase();
+    const visible=msOptions[key].filter(v=>v.toLowerCase().includes(lower));
+    if(!visible.length){listEl.innerHTML='<div class="ms-no-results">No results</div>';return;}
+    listEl.innerHTML=visible.map(v=>{
+        const esc=v.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        const label=(key==='date')?formatDateLabel(v):v;
+        return `<label class="ms-option" onclick="event.stopPropagation()"><input type="checkbox" ${sel.has(v)?'checked':''} onchange="msToggleOption('${key}','${esc}',this.checked)"><span>${label}</span></label>`;
+    }).join('');
+}
+function msSearch(key,val){msRenderList(key,val);}
+function msToggleOption(key,val,checked){
+    if(checked)msState[key].add(val);else msState[key].delete(val);
+    msUpdateLabel(key);if(key==='date'){checkEnableLoad();return;}clientFilter();
+}
+function msSelectAll(key){
+    msOptions[key].forEach(v=>msState[key].add(v));
+    const s=document.querySelector(`#drop-${key} .ms-search`);
+    msRenderList(key,s?s.value:'');msUpdateLabel(key);if(key==='date'){checkEnableLoad();return;}clientFilter();
+}
+function msClear(key){
+    msState[key].clear();
+    const s=document.querySelector(`#drop-${key} .ms-search`);
+    msRenderList(key,s?s.value:'');msUpdateLabel(key);if(key==='date'){checkEnableLoad();return;}clientFilter();
+}
+function msUpdateLabel(key){
+    const el=document.getElementById('text-'+key),tr=document.getElementById('trig-'+key),sel=msState[key];
+    if(!sel.size){
+        if(key==='date'){el.textContent='Select date(s)…';el.className='ms-trigger-text required-hint';tr.classList.add('required-empty');}
+        else if(key==='gap'){el.textContent='All (±4h)';el.className='ms-trigger-text';}
+        else{el.textContent='All';el.className='ms-trigger-text';}
+    } else if(key==='date'){
+        el.textContent=sel.size===1?formatDateLabel([...sel][0]):sel.size===msOptions.date.length?`All (${sel.size} dates)`:`${sel.size} dates selected`;
+        el.className='ms-trigger-text has-selection';tr.classList.remove('required-empty');
+    } else if(sel.size===1){el.textContent=[...sel][0];el.className='ms-trigger-text has-selection';}
+    else{el.textContent=`${sel.size} selected`;el.className='ms-trigger-text has-selection';}
+}
+function toggleFilters(){
+    const p=document.getElementById('filter-panel'),btn=document.getElementById('btn-filters');
+    const isOpen=p.style.display!=='none';
+    p.style.display=isOpen?'none':'flex';btn.style.borderColor=isOpen?'':'var(--accent)';btn.style.color=isOpen?'':'var(--accent)';
+}
+function checkEnableLoad(){
+    const ok=msState.date.size>0&&!isLoading;
+    document.getElementById('btn-apply').disabled=!ok;
+    document.getElementById('btn-refresh').disabled=!ok;
+}
+
+// ══════════════════════════════════════════════════════
+//  CLIENT FILTER
+// ══════════════════════════════════════════════════════
+function clientFilter(){
+    filteredMatches=allMatches.map(m=>{
+        const t=m.trip;
+        if(msState.direction.size>0&&!msState.direction.has(safeStr(t.trip_direction).toUpperCase().trim()))return null;
+        if(msState.office.size>0&&!msState.office.has(safeStr(t.office).trim()))return null;
+        if(msState.landmark.size>0&&!msState.landmark.has(safeStr(t.landmark).trim()))return null;
+        if(msState.cab.size>0&&!msState.cab.has(safeStr(t.cab_reg_no).trim()))return null;
+        if(msState.tripid.size>0&&!msState.tripid.has(safeStr(t.trip_id||t.unique_id).trim()))return null;
+        let tolls=m.tolls;
+        if(msState.gap.size>0){
+            tolls=tolls.filter(tl=>tollMatchesGap(tl._tollMs,m._refMs));
+            if(!tolls.length) return null;
+        }
+        if(msState.toll.size>0&&!tolls.some(tl=>msState.toll.has(safeStr(tl.toll_name||tl.transaction_description).trim()))) return null;
+        return{...m,tolls};
+    }).filter(Boolean);
+    renderGrids(filteredMatches);renderChips();
+}
+function clearSecondaryFilters(){
+    ['direction','office','landmark','cab','toll','tripid','gap'].forEach(k=>{msState[k].clear();msUpdateLabel(k);msRenderList(k,'');});
+    clientFilter();
+}
+function populateSecondaryFilters(matches){
+    msOptions.direction=[...new Set(matches.map(m=>safeStr(m.trip.trip_direction).toUpperCase().trim()).filter(Boolean))].sort();
+    msOptions.office   =[...new Set(matches.map(m=>safeStr(m.trip.office).trim()).filter(Boolean))].sort();
+    msOptions.landmark =[...new Set(matches.map(m=>safeStr(m.trip.landmark).trim()).filter(Boolean))].sort();
+    msOptions.cab      =[...new Set(matches.map(m=>safeStr(m.trip.cab_reg_no).trim()).filter(Boolean))].sort();
+    msOptions.toll     =[...new Set(matches.flatMap(m=>m.tolls.map(t=>safeStr(t.toll_name||t.transaction_description).trim())).filter(Boolean))].sort();
+    msOptions.tripid   =[...new Set(matches.map(m=>safeStr(m.trip.trip_id||m.trip.unique_id).trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    ['direction','office','landmark','cab','toll','tripid','gap'].forEach(k=>msRenderList(k,''));
+}
+
+function renderChips(){
+    const bar=document.getElementById('active-filters');
+    const labels={direction:'Dir',office:'Office',landmark:'Landmark',cab:'Cab',toll:'Toll',tripid:'Trip ID',gap:'Gap'};
+    const chips=[];
+    if(loadedDates.length){const label=loadedDates.length===1?formatDateLabel(loadedDates[0]):`${loadedDates.length} dates`;chips.push(`<div class="filter-chip chip-date"><i class="fa-regular fa-calendar"></i> ${label}</div>`);}
+    if(loadedGap!==null) chips.push(`<div class="filter-chip chip-gap"><i class="fa-solid fa-clock"></i> API: ${loadedGap}</div>`);
+    ['direction','office','landmark','cab','toll','tripid','gap'].forEach(key=>{
+        const sel=msState[key];if(!sel.size)return;
+        chips.push(`<div class="filter-chip">${labels[key]}: ${sel.size===1?[...sel][0]:sel.size+' windows'}<button onclick="msClear('${key}')">×</button></div>`);
+    });
+    if(!chips.length){bar.style.display='none';return;}
+    bar.style.display='flex';bar.innerHTML=chips.join('');
+}
+
+// ══════════════════════════════════════════════════════
+//  TABS & STATS
+// ══════════════════════════════════════════════════════
+function switchTab(tab){
+    currentTab=tab;
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('tab-'+tab).classList.add('active');
+    document.getElementById('page-'+tab).classList.add('active');
+    updateStats(filteredMatches);
+}
+function updateStats(matches){
+    const view=currentTab==='updated'
+        ? matches.filter(m=> isTollUpdated(m))
+        : matches.filter(m=>!isTollUpdated(m));
+    const tt=view.reduce((s,m)=>s+m.tolls.length,0);
+    const ta=view.reduce((s,m)=>s+m.tolls.reduce((sa,t)=>sa+parseFloat(t.amount||0),0),0);
+    document.getElementById('stat-showing').textContent=view.length+' trips';
+    document.getElementById('stat-tolls').textContent=tt;
+    document.getElementById('stat-amount').textContent='₹'+ta.toLocaleString('en-IN',{maximumFractionDigits:2});
+}
+
+// ══════════════════════════════════════════════════════
+//  RENDER GRIDS
+// ══════════════════════════════════════════════════════
+function renderGrids(matches){
+    const pending=matches.filter(m=>!isTollUpdated(m));
+    const updated=matches.filter(m=> isTollUpdated(m));
+    document.getElementById('count-pending').textContent=pending.length;
+    document.getElementById('count-updated').textContent=updated.length;
+
+    // ★ UPDATED grid
+    const ug=document.getElementById('grid-updated');ug.innerHTML='';
+    if(!updated.length){ug.innerHTML=`<div class="empty-state"><i class="fa-solid fa-receipt" style="color:var(--text-muted);"></i><h3>Nothing Updated Yet</h3><p>Link tolls from the Pending tab to see them here.</p></div>`;}
+    else{updated.forEach(d=>renderCard(d,ug,true));}
+
+    // PENDING grid
+    const pg=document.getElementById('grid-pending');pg.innerHTML='';
+    if(!pending.length){pg.innerHTML=`<div class="empty-state"><i class="fa-solid fa-circle-check" style="color:var(--green);"></i><h3>All Clear!</h3><p>No pending toll matches.</p></div>`;}
+    else{pending.forEach(d=>renderCard(d,pg,false));}
+
+    updateStats(matches);
+}
+
+// ══════════════════════════════════════════════════════
+//  RENDER CARD
+// ══════════════════════════════════════════════════════
+function renderCard(data,container,isUpdated){
+    const trip=data.trip,tolls=data.tolls;
+    const tripUniqueId=safeStr(trip.unique_id);
+    const tripId      =safeStr(trip.trip_id||trip.unique_id||'—');
+    const landmark    =safeStr(trip.landmark||'');
+    const office      =safeStr(trip.office  ||'');
+    const dc=getDirectionClass(trip.trip_direction);
+    const di=getDirectionIcon(trip.trip_direction);
+    const dl=safeStr(trip.trip_direction||'N/A').toUpperCase();
+    const totalAmt=tolls.reduce((s,t)=>s+parseFloat(t.amount||0),0);
+    const siblings=data._siblings||[];
+    const totalEmpCount=1+siblings.length;
+    const allEmps=[
+        {name:safeStr(trip.employee_name||''),employee_id:safeStr(trip.employee_id||''),gender:safeStr(trip.gender||''),landmark:landmark,address:safeStr(trip.address||'')},
+        ...siblings.map(s=>({name:safeStr(s.employee_name||''),employee_id:safeStr(s.employee_id||''),gender:safeStr(s.gender||''),landmark:safeStr(s.landmark||''),address:safeStr(s.address||'')}))
+    ];
+
+    const empBoxHtml=`
+        <div class="employees-box">
+            <div class="employees-box-header">
+                <i class="fa-solid fa-${totalEmpCount>1?'users':'user'}"></i>
+                ${totalEmpCount>1?`Also on this trip (${totalEmpCount-1} more)`:'Passenger'}
+            </div>
+            ${allEmps.map(e=>`
+            <div class="emp-entry">
+                <div class="emp-entry-top">
+                    <span class="emp-entry-name">${e.name||'—'}</span>
+                    ${e.employee_id?`<span class="emp-entry-id">${e.employee_id}</span>`:''}
+                    ${e.gender?`<span class="emp-entry-gender">${e.gender}</span>`:''}
+                </div>
+                ${(e.landmark||e.address)?`
+                <div class="emp-entry-addr">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <div class="emp-entry-addr-text">
+                        ${e.landmark?`<span class="emp-entry-landmark">${e.landmark}</span>${e.address?' — ':''}`:''}
+                        ${e.address?`<span>${e.address}</span>`:''}
+                    </div>
+                </div>`:''}
+            </div>`).join('')}
+        </div>`;
+
+    const tollsHtml=tolls.map(t=>{
+        const tId    =safeStr(t.id);
+        const desc   =safeStr(t.transaction_description||'—');
+        const dtDisp =safeStr(t.travel_date_time||'—');
+        const amount =parseFloat(t.amount||0).toLocaleString('en-IN',{maximumFractionDigits:2});
+        const matchCount=tollMatchCounts[tId]||1;
+        const nameTag=(t.toll_name||trip.toll_name)?`<span class="toll-name-tag"><i class="fa-solid fa-road"></i> ${t.toll_name||trip.toll_name}</span>`:'';
+        const isConfirmedRoute=(t._rule==='toll_route');
+        const confirmedBadge=isConfirmedRoute?`<span class="route-confirmed-badge"><i class="fa-solid fa-check-circle"></i> TOLL ROUTE</span>`:'';
+        const matchBadge=`<span class="toll-match-count ${matchCount===1?'single':''}" title="${matchCount===1?'Unique match':'Appears in '+matchCount+' trips'}"><i class="fa-solid fa-${matchCount===1?'check':'clone'}"></i> ${matchCount}×</span>`;
+
+        if(isUpdated){
+            return `<div class="toll-item-ro">
+                <div class="toll-details">
+                    <div class="toll-datetime">${dtDisp}</div>
+                    <div class="toll-desc">${desc}</div>
+                    <div class="toll-meta-row">${nameTag}${confirmedBadge}${matchBadge}</div>
+                </div>
+                <div class="toll-amount toll-amount-updated">₹${amount}</div>
+            </div>`;
+        }
+
+        const descEsc    =desc.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        const landmarkEsc=landmark.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        const officeEsc  =office.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+
+        return `<div class="toll-item ${isConfirmedRoute?'is-confirmed-route':''}" id="toll-item-${tId}">
+            <div class="toll-middle" onclick="toggleTollSelect(this)">
+                <input type="checkbox" class="toll-checkbox-${tripUniqueId}" value="${tId}" ${isConfirmedRoute?'checked':''}>
+                <div class="toll-details">
+                    <div class="toll-datetime">
+                        <span id="toll-time-display-${tId}">${dtDisp}</span>
+                        <button class="btn-tiny btn-edit-time" id="toll-time-edit-${tId}"
+                            onclick="event.stopPropagation();toggleTollTimeEdit('${tId}','edit')">
+                            <i class="fa-regular fa-pen-to-square"></i>
+                        </button>
+                        <button class="btn-tiny btn-save-time" id="toll-time-save-${tId}" style="display:none;"
+                            onclick="event.stopPropagation();toggleTollTimeEdit('${tId}','save')">✓</button>
+                        <button class="btn-tiny btn-cancel-time" id="toll-time-cancel-${tId}" style="display:none;"
+                            onclick="event.stopPropagation();toggleTollTimeEdit('${tId}','cancel')">✕</button>
+                    </div>
+                    <input type="text" class="toll-time-edit-input" id="toll-time-input-${tId}"
+                        onclick="event.stopPropagation();" placeholder="DD-MM-YYYY HH:MM:SS">
+                    <div class="toll-desc">${desc}</div>
+                    <div class="toll-meta-row">${nameTag}${confirmedBadge}${matchBadge}</div>
+                </div>
+                <div class="toll-amount toll-amount-pending">₹${amount}</div>
+            </div>
+            <div class="toll-right">
+                ${isConfirmedRoute?'':`<button class="btn-not-route" id="btn-not-route-${tId}" title="Save rule: this toll is NOT a route for this landmark/office"
+                    onclick="markNotTollRoute('${tId}','${tripUniqueId}','${descEsc}','${landmarkEsc}','${officeEsc}')">
+                    <i class="fa-solid fa-xmark"></i><br>Not<br>Route
+                </button>`}
+            </div>
+        </div>`;
+    }).join('');
+
+    const card=document.createElement('div');
+    card.className='mapping-card'+(isUpdated?' is-updated':'');
+    card.id=`card-${tripUniqueId}`;
+    card.dataset.landmark=landmark;
+    card.dataset.office  =office;
+
+    card.innerHTML=`
+    <div class="card-header">
+        <div class="card-header-left">
+            <span class="cab-reg"><i class="fa-solid fa-car-side"></i> ${safeStr(trip.cab_reg_no||'—')}</span>
+            ${trip.cab_type?`<span class="pill pill-yellow">${trip.cab_type}</span>`:''}
+            ${isUpdated?`<span class="updated-badge"><i class="fa-solid fa-circle-check"></i> UPDATED</span>`:''}
+        </div>
+        <div class="card-header-right">
+            <span class="trip-id-badge"><i class="fa-solid fa-hashtag" style="font-size:.7rem;"></i> ${tripId}</span>
+            <span class="emp-count-badge"><i class="fa-solid fa-${totalEmpCount>1?'users':'user'}"></i> ${totalEmpCount} emp${totalEmpCount>1?'s':''}</span>
+            <span class="pill pill-blue"><i class="fa-regular fa-calendar"></i> ${safeStr(trip.shift_date||'—')}</span>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="trip-info">
+            <div class="meta-row">
+                <span class="direction-badge ${dc}"><i class="fa-solid ${di}"></i> ${dl}</span>
+                <div class="meta-sep"></div>
+                <div class="meta-item"><i class="fa-solid fa-location-dot" style="color:var(--accent2);"></i><strong>${safeStr(trip.landmark||'—')}</strong></div>
+                <div class="meta-sep"></div>
+                <div class="meta-item"><i class="fa-regular fa-clock"></i><strong>${safeStr(trip.shift_time||'N/A')}</strong></div>
+                <div class="meta-sep"></div>
+                <div class="meta-item"><i class="fa-regular fa-building"></i><strong>${safeStr(trip.office||'N/A')}</strong></div>
+            </div>
+            ${empBoxHtml}
+            <div class="times-block">
+                <div class="times-block-header">
+                    <span><i class="fa-solid fa-route" style="color:var(--accent);margin-right:4px;"></i> Trip Times</span>
+                    <div>
+                        <button class="btn-micro btn-micro-edit" id="time-btn-edit-${tripUniqueId}" onclick="toggleTimeEdit('${tripUniqueId}','edit')"><i class="fa-regular fa-pen-to-square"></i> Edit</button>
+                        <button class="btn-micro btn-micro-save" id="time-btn-save-${tripUniqueId}" style="display:none;" onclick="toggleTimeEdit('${tripUniqueId}','save')">✓ Save</button>
+                        <button class="btn-micro btn-micro-cancel" id="time-btn-cancel-${tripUniqueId}" style="display:none;" onclick="toggleTimeEdit('${tripUniqueId}','cancel')">✕</button>
+                    </div>
+                </div>
+                <div class="times-row">
+                    <div class="time-block"><div class="time-dot pickup"></div><span class="time-label">Pickup</span><span class="time-value" id="pu-display-${tripUniqueId}">${safeStr(trip.pickup_time||'--:--')}</span></div>
+                    <i class="fa-solid fa-arrow-right times-arrow"></i>
+                    <div class="time-block"><div class="time-dot drop"></div><span class="time-label">Drop</span><span class="time-value" id="dr-display-${tripUniqueId}">${safeStr(trip.drop_time||'--:--')}</span></div>
+                </div>
+                <div class="time-edit-row" id="time-edit-row-${tripUniqueId}">
+                    <span class="time-edit-label" style="color:#3ddc84;">Pickup</span>
+                    <input type="time" class="time-edit-input" id="pu-input-${tripUniqueId}" step="60">
+                    <span class="time-edit-label" style="color:#ff6b6b;margin-left:8px;">Drop</span>
+                    <input type="time" class="time-edit-input" id="dr-input-${tripUniqueId}" step="60">
+                </div>
+            </div>
+            ${(trip.journey_start_location||trip.journey_end_location)?`
+            <div class="journey-row">
+                <span style="color:var(--green);font-weight:600;">${safeStr(trip.journey_start_location||'?')}</span>
+                <i class="fa-solid fa-arrow-right" style="color:var(--text-dim);font-size:.62rem;"></i>
+                <span style="color:var(--accent2);font-weight:600;">${safeStr(trip.journey_end_location||'?')}</span>
+            </div>`:''}
+        </div>
+        <div class="toll-options">
+            <div class="tolls-header">
+                <div class="tolls-title">
+                    <i class="fa-solid fa-receipt" style="color:var(--purple);"></i>
+                    ${isUpdated?'Linked Tolls':'Matched Tolls'}
+                    <span class="tolls-count" id="tolls-count-${tripUniqueId}">${tolls.length}</span>
+                </div>
+                ${!isUpdated?`<span style="font-size:.68rem;color:var(--text-dim);">${loadedGap||''}</span>`:''}
+            </div>
+            ${tollsHtml}
+            ${isUpdated?`
+            <div class="linked-total">
+                <i class="fa-solid fa-circle-check" style="color:var(--green);"></i>
+                <span class="linked-total-label">Total:</span>
+                <span class="linked-total-val">₹${totalAmt.toLocaleString('en-IN',{maximumFractionDigits:2})}</span>
+                ${trip.toll_name?`<span style="font-family:var(--font-mono);font-size:.72rem;color:var(--purple);margin-left:auto;">${trip.toll_name}</span>`:''}
+            </div>`:`
+            <button class="btn-link" id="btn-link-${tripUniqueId}" onclick="saveTolls('${tripUniqueId}')">
+                <i class="fa-solid fa-link"></i> Link Selected Tolls
+            </button>
+            <div class="btn-link-hint"><i class="fa-solid fa-info-circle"></i> Linking also auto-saves Toll Route rules</div>`}
+        </div>
+    </div>`;
+    container.appendChild(card);
+}
+
+// ══════════════════════════════════════════════════════
+//  NOT TOLL ROUTE
+// ══════════════════════════════════════════════════════
+async function markNotTollRoute(tollId,tripUniqueId,tollDesc,landmark,office){
+    const btn=document.getElementById(`btn-not-route-${tollId}`);
+    if(btn){btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i>';btn.disabled=true;}
+    try{
+        const res=await fetch('/api/toll/route_rule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({landmark,office,toll_name:tollDesc,is_toll_route:false})});
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const itemEl=document.getElementById(`toll-item-${tollId}`);
+        if(itemEl){
+            itemEl.style.transition='opacity .2s,transform .2s';
+            itemEl.style.opacity='0';itemEl.style.transform='translateX(12px)';
+            setTimeout(()=>{
+                itemEl.remove();
+                const remaining=document.querySelectorAll(`.toll-checkbox-${tripUniqueId}`).length;
+                const countBadge=document.getElementById(`tolls-count-${tripUniqueId}`);
+                if(countBadge) countBadge.textContent=remaining;
+                updateStats(filteredMatches);
+            },200);
+        }
+        const m=allMatches.find(m=>safeStr(m.trip.unique_id)===tripUniqueId);
+        if(m) m.tolls=m.tolls.filter(t=>safeStr(t.id)!==tollId);
+    } catch(e){
+        alert('Failed to save rule: '+e.message);
+        if(btn){btn.innerHTML='<i class="fa-solid fa-xmark"></i><br>Not<br>Route';btn.disabled=false;}
+    }
+}
+
+// ══════════════════════════════════════════════════════
+//  SAVE / LINK TOLLS
+// ══════════════════════════════════════════════════════
+async function saveTolls(tripUniqueId){
+    const checkboxes=document.querySelectorAll(`.toll-checkbox-${tripUniqueId}:checked`);
+    const selectedTollIds=Array.from(checkboxes).map(cb=>cb.value);
+    if(!selectedTollIds.length){alert('Select at least one toll to link!');return;}
+    const btn=document.getElementById(`btn-link-${tripUniqueId}`);
+    if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Linking…';}
+    const cardEl=document.getElementById(`card-${tripUniqueId}`);
+    const landmark=cardEl?cardEl.dataset.landmark:'';
+    const office  =cardEl?cardEl.dataset.office  :'';
+    const match   =allMatches.find(m=>safeStr(m.trip.unique_id)===tripUniqueId);
+    try{
+        const res=await fetch('/api/toll/mark',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({trip_unique_id:tripUniqueId,selected_toll_ids:selectedTollIds})});
+        if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail||'Server error');}
+        if(match){
+            await Promise.all(selectedTollIds.map(tid=>{
+                const toll=match.tolls.find(t=>safeStr(t.id)===tid);
+                if(!toll) return Promise.resolve();
+                const tollName=safeStr(toll.transaction_description||'');
+                if(!tollName) return Promise.resolve();
+                return fetch('/api/toll/route_rule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({landmark,office,toll_name:tollName,is_toll_route:true})}).catch(e=>console.warn(e));
+            }));
+        }
+        const linkedSet=new Set(selectedTollIds);
+        for(const m of allMatches) m.tolls=m.tolls.filter(t=>!linkedSet.has(safeStr(t.id)));
+        tollMatchCounts=buildTollMatchCounts(allMatches);
+        for(const tid of selectedTollIds){
+            const el=document.getElementById(`toll-item-${tid}`);
+            if(el){el.style.transition='opacity .2s,transform .2s';el.style.opacity='0';el.style.transform='translateX(-12px)';setTimeout(()=>el.remove(),200);}
+        }
+        setTimeout(()=>{
+            const remaining=document.querySelectorAll(`.toll-checkbox-${tripUniqueId}`).length;
+            const countBadge=document.getElementById(`tolls-count-${tripUniqueId}`);
+            if(countBadge) countBadge.textContent=remaining;
+            updateStats(filteredMatches);
+        },220);
+        if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-link"></i> Link Selected Tolls';}
+    } catch(e){
+        alert('Failed: '+e.message);
+        if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-link"></i> Link Selected Tolls';}
+    }
+}
+
+// ══════════════════════════════════════════════════════
+//  TIME EDIT
+// ══════════════════════════════════════════════════════
+function toggleTimeEdit(tripId,mode){
+    const row=document.getElementById(`time-edit-row-${tripId}`);
+    const bE=document.getElementById(`time-btn-edit-${tripId}`),bS=document.getElementById(`time-btn-save-${tripId}`),bC=document.getElementById(`time-btn-cancel-${tripId}`);
+    const puD=document.getElementById(`pu-display-${tripId}`),drD=document.getElementById(`dr-display-${tripId}`);
+    const puI=document.getElementById(`pu-input-${tripId}`),drI=document.getElementById(`dr-input-${tripId}`);
+    if(mode==='edit'){puI.value=puD.textContent.trim().replace('--:--','').slice(0,5);drI.value=drD.textContent.trim().replace('--:--','').slice(0,5);row.classList.add('visible');bE.style.display='none';bS.style.display=bC.style.display='inline-block';puI.focus();}
+    else if(mode==='save'){const re=/^\d{2}:\d{2}(:\d{2})?$/;let ok=true;if(puI.value&&!re.test(puI.value)){puI.classList.add('err');ok=false;}else puI.classList.remove('err');if(drI.value&&!re.test(drI.value)){drI.classList.add('err');ok=false;}else drI.classList.remove('err');if(!ok)return;puD.textContent=puI.value||'--:--';drD.textContent=drI.value||'--:--';row.classList.remove('visible');bE.style.display='inline-block';bS.style.display=bC.style.display='none';}
+    else{row.classList.remove('visible');bE.style.display='inline-block';bS.style.display=bC.style.display='none';}
+}
+function toggleTollTimeEdit(tollId,mode){
+    const disp=document.getElementById(`toll-time-display-${tollId}`),inp=document.getElementById(`toll-time-input-${tollId}`);
+    const bE=document.getElementById(`toll-time-edit-${tollId}`),bS=document.getElementById(`toll-time-save-${tollId}`),bC=document.getElementById(`toll-time-cancel-${tollId}`);
+    if(mode==='edit'){inp.value=disp.textContent.trim();inp.classList.add('visible');disp.style.display='none';bE.style.display='none';bS.style.display=bC.style.display='inline-block';}
+    else if(mode==='save'){disp.textContent=inp.value.trim()||disp.textContent;inp.classList.remove('visible');disp.style.display='inline';bE.style.display='inline-block';bS.style.display=bC.style.display='none';}
+    else{inp.classList.remove('visible');disp.style.display='inline';bE.style.display='inline-block';bS.style.display=bC.style.display='none';}
+}
+function toggleTollSelect(el){
+    const cb=el.querySelector('input[type="checkbox"]');
+    if(cb){cb.checked=!cb.checked;const item=el.closest('.toll-item');if(item){cb.checked?item.classList.add('selected'):item.classList.remove('selected');}}
+}
+
+// ══════════════════════════════════════════════════════
+//  LOAD
+// ══════════════════════════════════════════════════════
+async function loadAvailableDates(){
+    const listEl=document.getElementById('list-date');
+    listEl.innerHTML='<div class="ms-no-results"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div>';
+    try{
+        const res=await fetch('/api/toll/available_dates');if(!res.ok) throw new Error('HTTP '+res.status);
+        const dates=await res.json();msOptions.date=dates;msRenderList('date','');
+        if(!dates.length) listEl.innerHTML='<div class="ms-no-results">No shift dates found.</div>';
+    } catch(e){document.getElementById('list-date').innerHTML=`<div class="ms-no-results" style="color:var(--accent2);">Failed to load dates</div>`;}
+}
+
+async function applyAndLoad(){
+    if(isLoading) return;
+    const dateSet=msState.date;if(!dateSet.size){alert('Please select at least one Shift Date first.');return;}
+    const dates=[...dateSet];
+    const gapLbl='±4h';
+    isLoading=true;
+    document.getElementById('btn-apply').disabled=true;document.getElementById('btn-apply').innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Loading…';
+    document.getElementById('btn-refresh').disabled=true;
+    ['direction','office','landmark','cab','toll','tripid','gap'].forEach(k=>{msState[k].clear();msUpdateLabel(k);});
+    const dateLabel=dates.length===1?formatDateLabel(dates[0]):`${dates.length} dates`;
+    document.getElementById('grid-updated').innerHTML=`<div class="loader"><i class="fa-solid fa-spinner fa-spin"></i><span>Loading…</span></div>`;
+    document.getElementById('grid-pending').innerHTML=`<div class="loader"><i class="fa-solid fa-spinner fa-spin"></i><span>Loading for ${dateLabel} with gap ${gapLbl}…</span></div>`;
+    try{
+        const fetches=dates.map(date=>fetch(`/api/toll/potential_matches?shift_date=${encodeURIComponent(date)}&time_gap_hours=4`).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status+' for '+date);return r.json();}));
+        const results=await Promise.all(fetches);
+        const raw=results.flat();
+        allMatches=deduplicateByTripId(raw);
+        precomputeTimes(allMatches);
+        deduplicateTollsByName(allMatches);
+        tollMatchCounts=buildTollMatchCounts(allMatches);
+        loadedDates=dates;loadedGap=gapLbl;
+        filteredMatches=[...allMatches];
+        populateSecondaryFilters(allMatches);renderGrids(filteredMatches);renderChips();
+        document.getElementById('stats-bar').style.display='flex';
+        document.getElementById('stat-date').textContent=dateLabel;document.getElementById('stat-gap').textContent=gapLbl;
+    } catch(e){
+        const errHtml=`<div class="loader" style="color:var(--accent2);"><i class="fa-solid fa-triangle-exclamation"></i><span>Error: ${e.message}</span></div>`;
+        document.getElementById('grid-updated').innerHTML=errHtml;document.getElementById('grid-pending').innerHTML=errHtml;
+    } finally{
+        isLoading=false;document.getElementById('btn-apply').disabled=false;document.getElementById('btn-apply').innerHTML='<i class="fa-solid fa-bolt"></i> Load Data';checkEnableLoad();
+    }
+}
+
+document.addEventListener('DOMContentLoaded',()=>{initGapOptions();loadAvailableDates();});
+</script>
+</body>
+</html>
