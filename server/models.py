@@ -111,13 +111,13 @@ class RawTripData(TripDataBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
 
 # --- 5.OPERATION DATA ---
-class OperationData(TripDataBase, table=True):
-    __tablename__ = "operationdata"
+class OperationData(TripDataFile, table=True):
+    __tablename__ = "operationtripdata"
     id: Optional[int] = Field(default=None, primary_key=True)
 
 # --- 5.trip Data ---
 class TripData(TripDataBase, table=True):
-    __tablename__ = "tripdata"
+    __tablename__ = "apptripdata"
     id: Optional[int] = Field(default=None, primary_key=True)
 
 # --- 6. BA ROW DATA ---
@@ -167,7 +167,7 @@ class VehicleMaster(DynamicSQLModel, table=True):
     vehicle_rc: Optional[str] = None
     
 #T3 running vehicle
-class T3RunningVehicle(DynamicSQLModel):
+class T3RunningVehicle(DynamicSQLModel,table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     vehicle_id: Optional[str] = None
     vehicle_no: Optional[str] = None

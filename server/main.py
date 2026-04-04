@@ -18,6 +18,8 @@ from starlette.middleware.sessions import SessionMiddleware
 #         which breaks https_only=True cookie handling.
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
+import models
+
 from config import get_settings
 from database import create_db_and_tables, engine
 from admin import setup_admin
